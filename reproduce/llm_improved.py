@@ -37,8 +37,15 @@ USE_QUANTIZATION = True  # Set to False if you have enough VRAM or want full pre
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 torch_dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+
+print("="*80)
+print("IMPROVED LLM INFERENCE CODE - v2 (with per-example slicing fix)")
+print("="*80)
 print(f"Using device={device}, dtype={torch_dtype}, writing to {out_path}")
 print(f"Batch size: {BATCH_SIZE}, Quantization: {USE_QUANTIZATION}")
+print(f"Generation config: do_sample={gen_cfg['do_sample']}, repetition_penalty={gen_cfg['repetition_penalty']}")
+print(f"Using chat template: True")
+print("="*80)
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, trust_remote_code=True)
 
@@ -96,25 +103,30 @@ def generate_batch(batch_queries):
     Generate outputs for a batch of queries.
     """
     prompts = []
+    contexts = []
     for ex in batch_queries:
         anchor = ex.get("anchor") or ""
         context = ex.get("context") or ""
         prompt = prepare_prompt_with_chat_template(context, anchor)
         prompts.append(prompt)
+        contexts.append(context)
     
     inputs = tokenizer(
         prompts, 
         return_tensors="pt", 
         padding=True, 
         truncation=True,
-        max_length=2048  # Adjust based on model's context window
+        max_length=2048
     )
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    
+    max_context_tokens = max(len(tokenizer(ctx, add_special_tokens=False).input_ids) for ctx in contexts)
+    adaptive_max_new_tokens = min(max_context_tokens + 16, gen_cfg["max_new_tokens"])
     
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=gen_cfg["max_new_tokens"],
+            max_new_tokens=adaptive_max_new_tokens,
             do_sample=gen_cfg["do_sample"],
             temperature=gen_cfg["temperature"] if gen_cfg["do_sample"] else None,
             repetition_penalty=gen_cfg["repetition_penalty"],
@@ -122,16 +134,14 @@ def generate_batch(batch_queries):
             pad_token_id=tokenizer.pad_token_id,
         )
     
-    input_len = inputs["input_ids"].shape[1]
-    generated_ids = outputs[:, input_len:]
+    input_lens = inputs["attention_mask"].sum(dim=1).tolist()
+    decoded_outputs = []
+    for i, seq in enumerate(outputs):
+        cont = seq[int(input_lens[i]):]
+        text = tokenizer.decode(cont, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        decoded_outputs.append(text)
     
-    decoded_outputs = tokenizer.batch_decode(
-        generated_ids,
-        skip_special_tokens=True,
-        clean_up_tokenization_spaces=True  # Helps with punctuation spacing
-    )
-    
-    return decoded_outputs, prompts
+    return decoded_outputs, prompts, contexts
 
 written = 0
 empty_outputs = 0
@@ -143,14 +153,15 @@ with open(out_path, "w", encoding="utf-8") as fout:
         batch_queries = queries[batch_start:batch_end]
         
         try:
-            decoded_outputs, prompts = generate_batch(batch_queries)
+            decoded_outputs, prompts, contexts = generate_batch(batch_queries)
             
-            for i, (ex, output, prompt) in enumerate(zip(batch_queries, decoded_outputs, prompts)):
+            for i, (ex, output, prompt, context) in enumerate(zip(batch_queries, decoded_outputs, prompts, contexts)):
                 anchor = ex.get("anchor") or ""
-                context = ex.get("context") or ""
                 
                 if not output.strip():
                     empty_outputs += 1
+                
+                n_ctx_tokens = len(tokenizer(context, add_special_tokens=False).input_ids)
                 
                 rec = {
                     "model": model_name,
@@ -158,6 +169,12 @@ with open(out_path, "w", encoding="utf-8") as fout:
                     "context": context,
                     "prompt": prompt,
                     "output": output or "",
+                    "use_chat_template": True,
+                    "do_sample": gen_cfg["do_sample"],
+                    "repetition_penalty": gen_cfg["repetition_penalty"],
+                    "max_new_tokens": gen_cfg["max_new_tokens"],
+                    "batch_size": BATCH_SIZE,
+                    "context_tokens": n_ctx_tokens,
                 }
                 
                 fout.write(json.dumps(rec, ensure_ascii=False) + "\n")

@@ -1,11 +1,24 @@
 # LLM Inference Improvements
 
+## Version History
+
+**v2 (Current)**: Fixed critical per-example slicing bug in batched generation that caused spacing degradation
+**v1**: Initial improvements with chat template, greedy decoding, batching, and quantization
+
 ## Problem Summary
 
 The original LLM inference code had two main issues:
 
 1. **Missing Spaces in Output**: The generated text had missing spaces between words (e.g., "TimeHonorVoice...,wasreleasedinSeptember" instead of "Time Honor Voice..., was released in September")
 2. **Slow Inference Speed**: Processing queries one at a time was inefficient on Google Colab
+
+## Critical Bug Fixed in v2
+
+**Per-Example Slicing Bug**: The initial improved code (v1) had a bug where it used a single `input_len` for the entire batch when slicing continuations. This caused incorrect decoding for padded sequences and led to spacing degradation partway through generation. 
+
+**Symptom**: Output would start with correct spacing but degrade into missing spaces (e.g., "fromhis fifthalbum", "end-ofthe-yeawardshows")
+
+**Fix**: Now uses `attention_mask.sum(dim=1)` to get the correct input length for each example in the batch
 
 ## Root Causes
 
@@ -121,7 +134,45 @@ if USE_QUANTIZATION and torch.cuda.is_available():
 
 4-bit quantization reduces memory usage by ~75% and can speed up inference on memory-bound systems like Google Colab.
 
-### 5. Other Improvements
+### 5. Adaptive max_new_tokens (v2)
+
+**Added:**
+```python
+max_context_tokens = max(len(tokenizer(ctx, add_special_tokens=False).input_ids) for ctx in contexts)
+adaptive_max_new_tokens = min(max_context_tokens + 16, gen_cfg["max_new_tokens"])
+```
+
+Caps generation length based on context size to prevent long "tail" hallucinations where spacing tends to degrade.
+
+### 6. Debugging Fields (v2)
+
+**Added to each output record:**
+```python
+rec = {
+    ...
+    "use_chat_template": True,
+    "do_sample": gen_cfg["do_sample"],
+    "repetition_penalty": gen_cfg["repetition_penalty"],
+    "max_new_tokens": gen_cfg["max_new_tokens"],
+    "batch_size": BATCH_SIZE,
+    "context_tokens": n_ctx_tokens,
+}
+```
+
+These fields help diagnose issues and verify the correct code is running.
+
+### 7. Startup Banner (v2)
+
+**Added:**
+```
+================================================================================
+IMPROVED LLM INFERENCE CODE - v2 (with per-example slicing fix)
+================================================================================
+```
+
+Helps users verify they're running the improved code, not the original.
+
+### 8. Other Improvements
 
 - **Truncation enabled**: Set `truncation=True` with `max_length=2048` to handle very long contexts efficiently
 - **Batch flushing**: Write results after each batch instead of after each query for better I/O performance
