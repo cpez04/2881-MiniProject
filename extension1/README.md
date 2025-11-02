@@ -73,4 +73,4 @@ python train.py --model_name "meta-llama/Llama-2-7b-chat-hf" --data_file "anti_c
 
 ## Testing
 
-After the model is uploaded to hugging face, it should be imported to together AI. From there, one can run the `2881-MiniProject/reproduce/together.ipynb` notebook with the model name changed to see results. 
+After the model is uploaded to hugging face, it should be imported to together AI. From there, one can run the `2881-MiniProject/reproduce/together.ipynb` notebook with the model name changed to see results. Results from our test are available at `extension1/atip-ux-cs-2881-no-copying-finetuning-v7.csv`.
