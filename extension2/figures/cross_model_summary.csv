@@ -1,0 +1,16 @@
+Model,Detector,Best_Threshold,Best_BL,Best_FPR,Best_TR,Op_Threshold,Op_BL,Op_FPR,Leakage_Rate
+Llama-2-7b-chat-hf,ROUGE-L,0.50,87.7%,0.0%,84.9%,0.50,87.7%,0.0%,96.8%
+Llama-2-7b-chat-hf,MinHash-Jaccard,0.60,56.4%,0.0%,54.6%,N/A,N/A,N/A,96.8%
+Llama-2-7b-chat-hf,TF-IDF-Cosine,0.45,96.7%,0.0%,93.6%,0.45,96.7%,0.0%,96.8%
+Mistral-Instruct-7b,ROUGE-L,0.50,81.5%,0.0%,72.6%,0.50,81.5%,0.0%,89.1%
+Mistral-Instruct-7b,MinHash-Jaccard,0.60,50.7%,0.0%,45.2%,N/A,N/A,N/A,89.1%
+Mistral-Instruct-7b,TF-IDF-Cosine,0.50,90.2%,8.0%,81.3%,0.50,90.2%,8.0%,89.1%
+Llama-2-13b-chat-hf,ROUGE-L,0.50,74.0%,0.0%,69.1%,0.50,74.0%,0.0%,93.5%
+Llama-2-13b-chat-hf,MinHash-Jaccard,0.60,27.9%,0.0%,26.1%,N/A,N/A,N/A,93.5%
+Llama-2-13b-chat-hf,TF-IDF-Cosine,0.55,86.0%,0.0%,80.4%,0.55,86.0%,0.0%,93.5%
+Mixtral-8x7B-Instruct-v0.1,ROUGE-L,0.50,92.8%,5.6%,85.9%,0.50,92.8%,5.6%,92.1%
+Mixtral-8x7B-Instruct-v0.1,MinHash-Jaccard,0.60,48.3%,0.0%,44.5%,N/A,N/A,N/A,92.1%
+Mixtral-8x7B-Instruct-v0.1,TF-IDF-Cosine,0.70,84.2%,0.0%,77.5%,0.70,84.2%,0.0%,92.1%
+SOLAR-10.7B-Instruct,ROUGE-L,0.65,87.9%,4.2%,79.1%,0.65,87.9%,4.2%,89.6%
+SOLAR-10.7B-Instruct,MinHash-Jaccard,0.60,72.8%,0.0%,65.2%,0.60,72.8%,0.0%,89.6%
+SOLAR-10.7B-Instruct,TF-IDF-Cosine,0.70,88.3%,4.2%,79.6%,0.70,88.3%,4.2%,89.6%
