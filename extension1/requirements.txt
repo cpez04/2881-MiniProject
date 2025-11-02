@@ -19,6 +19,9 @@ wandb>=0.16.0
 # Template engine (required for chat templates)
 jinja2>=3.1.0
 
+# Synthetic Data Generation
+openai==0.28
+
 # Additional utilities
 numpy>=1.24.0,<2.0
 scipy>=1.10.0
