@@ -31,8 +31,8 @@ pip install -r requirements.txt
 
 Note that the requirements from the original reproduction are also needed here. 
 
-### (Optional) Hugging Face login
-Needed if you will push models or need gated tokenizers.
+### Hugging Face login
+Needed to push models.
 ```bash
 huggingface-cli login
 ```
@@ -58,7 +58,7 @@ The script supports both LoRA and QLoRA:
 - QLoRA: pass `--load_in_4bit` (saves adapters only; no merge)
 - LoRA (full‑precision base): omit `--load_in_4bit` (merges adapters and saves a full model)
 
-For full testing, use LoRA. For local tests, QLoRA can be faster. In addition, the script uploads models to hugging face, so model IDs should be changed depending on the user. 
+For full testing, use LoRA, so that the full model is uploaded to Hugging Face. For local tests, QLoRA can be faster. In addition, the script uploads models to hugging face, so model IDs should be changed depending on the user. 
 
 ### Quick start (QLoRA, adapters only)
 ```bash
